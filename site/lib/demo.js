@@ -56,3 +56,19 @@ export function demoYear(year = DEMO_YEAR, until = Infinity, seed = DEMO_SEED) {
   }
   return { transactions, coverage: { from: start, to: end } };
 }
+
+// The example basket that goes with the example year: a Boxbaron who also
+// buys a lot of beer, with an Amarone as the drink of the year.
+export const DEMO_BASKET = {
+  items: {
+    rott: { count: 2, per: 'manad' },
+    vitt: { count: 1, per: 'manad' },
+    bubbel: { count: 5, per: 'ar' },
+    box: { count: 12, per: 'ar' },
+    ol: { count: 4, per: 'vecka' },
+    ipa: { count: 2, per: 'manad' },
+    glogg: { count: 3, per: 'ar' },
+    alkfri: { count: 2, per: 'manad' },
+  },
+  favorite: 'Den där Amaronen',
+};

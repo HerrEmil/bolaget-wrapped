@@ -1,9 +1,11 @@
-// Page controller: import (file, drop or paste), the story player and sharing.
-// Nothing here talks to a network; the page's CSP forbids it anyway.
+// Page controller: the basket, the optional bank import, the story player and
+// sharing. Nothing here talks to a network, and the page's CSP only allows its
+// own origin.
 
 import { buildSlides, cardFacts } from './lib/slides.js';
 import { computeWrapped, defaultYear, yearsIn } from './lib/stats.js';
-import { demoYear, DEMO_YEAR } from './lib/demo.js';
+import { CATEGORIES, PER_LABEL, emptyBasket, basketStats } from './lib/basket.js';
+import { demoYear, DEMO_YEAR, DEMO_BASKET } from './lib/demo.js';
 import { extractFromText, mergeResults } from './lib/parse.js';
 import { readFile, ReadError, READ_ERRORS } from './lib/read.js';
 import { cardBlob } from './lib/share.js';
@@ -30,7 +32,36 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-// ------------------------------------------------------------------ import
+// ------------------------------------------------------------------ basket
+
+const basket = emptyBasket();
+
+function renderBasket() {
+  const rows = CATEGORIES.map((c) => {
+    const pick = basket.items[c.key];
+    const count = el('output', { class: 'basket-count', text: String(pick.count) });
+    const row = el('li', { class: 'basket-item' });
+    const change = (delta) => {
+      pick.count = Math.max(0, Math.min(99, pick.count + delta));
+      count.textContent = String(pick.count);
+      row.classList.toggle('is-picked', pick.count > 0);
+      updateStartBar();
+    };
+    row.append(
+      el('span', { class: 'basket-emoji', 'aria-hidden': 'true', text: c.emoji }),
+      el('span', { class: 'basket-name' }, el('strong', { text: c.label }), el('small', { text: c.size })),
+      el('span', { class: 'stepper' },
+        el('button', { type: 'button', class: 'step', 'aria-label': `En ${c.one} mindre: ${c.label}`, onclick: () => change(-1), text: '−' }),
+        count,
+        el('button', { type: 'button', class: 'step', 'aria-label': `En ${c.one} till: ${c.label}`, onclick: () => change(1), text: '+' })),
+      el('select', { class: 'basket-per', name: `per-${c.key}`, 'aria-label': `Hur ofta: ${c.label}`, onchange: (e) => { pick.per = e.target.value; updateStartBar(); } },
+        Object.entries(PER_LABEL).map(([value, label]) => el('option', { value, selected: value === pick.per, text: label }))));
+    return row;
+  });
+  $('.basket').replaceChildren(el('ul', { class: 'basket-list' }, rows));
+}
+
+// ------------------------------------------------------------------ bank import
 
 const imported = [];
 const state = { merged: null, year: null };
@@ -48,6 +79,8 @@ function fileNote(entry) {
   return `Inga köp på Systembolaget bland ${plural(rowsWithDates, 'rad', 'rader')}.`;
 }
 
+const bankPurchases = () => (state.merged?.transactions ?? []).filter((t) => !t.refund);
+
 function renderResult() {
   const box = $('.result');
   const merged = mergeResults(imported.filter((f) => f.result).map((f) => f.result));
@@ -61,43 +94,44 @@ function renderResult() {
     else if (f.result.transactions.length) status = 'is-ok';
     return el('li', { class: status }, el('strong', { text: f.name }), ' ', fileNote(f));
   }));
-  const again = el('div', { class: 'result-actions' },
+  const actions = el('div', { class: 'result-actions' },
     el('button', { type: 'button', class: 'btn btn-small btn-secondary', onclick: () => $('.file-input').click(), text: 'Lägg till en fil till' }),
-    el('button', { type: 'button', class: 'btn btn-small btn-secondary', onclick: reset, text: 'Börja om' }));
+    el('button', { type: 'button', class: 'btn btn-small btn-secondary', onclick: resetBank, text: 'Ta bort' }));
 
-  if (!merged.transactions.length) {
+  const purchases = bankPurchases();
+  if (!purchases.length) {
     box.replaceChildren(el('div', { class: 'result-card' },
       el('p', { class: 'result-title', text: 'Vi hittade inga köp på Systembolaget.' }),
       files,
       el('p', { text: 'Kolla att filen är rätt konto och rätt period, eller prova att klistra in raderna. Annars: grattis till ett nyktert år.' }),
-      again));
-    return;
+      actions));
+  } else {
+    const picker = years.length > 1
+      ? el('fieldset', { class: 'years' }, el('legend', { text: 'Vilket år vill du se?' }),
+        years.map(({ year, visits }) => el('label', { class: 'year-chip' },
+          el('input', { type: 'radio', name: 'year', value: year, checked: year === state.year, onchange: () => { state.year = year; } }),
+          el('span', { text: String(year) }),
+          el('small', { text: plural(visits, 'besök', 'besök') }))))
+      : null;
+    const first = purchases[0].date;
+    const last = purchases[purchases.length - 1].date;
+    box.replaceChildren(el('div', { class: 'result-card' },
+      el('p', { class: 'result-title', text: `${plural(purchases.length, 'köp', 'köp')} på Systembolaget, ${formatDate(first, { withYear: true })} – ${formatDate(last, { withYear: true })}.` }),
+      files,
+      picker,
+      actions));
   }
-
-  const purchases = merged.transactions.filter((t) => !t.refund);
-  const first = purchases[0].date;
-  const last = purchases[purchases.length - 1].date;
-  const picker = years.length > 1
-    ? el('fieldset', { class: 'years' }, el('legend', { text: 'Vilket år vill du se?' }),
-      years.map(({ year, visits }) => el('label', { class: 'year-chip' },
-        el('input', { type: 'radio', name: 'year', value: year, checked: year === state.year, onchange: () => { state.year = year; } }),
-        el('span', { text: String(year) }),
-        el('small', { text: plural(visits, 'besök', 'besök') }))))
-    : null;
-  box.replaceChildren(el('div', { class: 'result-card' },
-    el('p', { class: 'result-title', text: `${plural(purchases.length, 'köp', 'köp')} på Systembolaget, ${formatDate(first, { withYear: true })} – ${formatDate(last, { withYear: true })}.` }),
-    files,
-    picker,
-    el('button', { type: 'button', class: 'btn btn-primary', onclick: startWrapped, text: 'Visa min Wrapped' }),
-    again));
+  updateStartBar();
 }
 
-function reset() {
+function resetBank() {
   imported.length = 0;
   pastes = 0;
+  state.merged = null;
   state.year = null;
   $('.result').replaceChildren();
   $('.paste-input').value = '';
+  updateStartBar();
 }
 
 async function addFiles(files) {
@@ -122,21 +156,46 @@ function addPaste() {
   renderResult();
 }
 
+// ------------------------------------------------------------------ start
+
+function updateStartBar() {
+  const units = basketStats(basket)?.units ?? 0;
+  const bought = bankPurchases().length;
+  const parts = [];
+  if (units) parts.push(`${num(units)} i korgen`);
+  if (bought) parts.push(`${plural(bought, 'köp', 'köp')} från banken`);
+  if (!parts.length && basket.favorite.trim()) parts.push('Årets dryck är ifylld');
+  $('.start-summary').textContent = parts.join(' · ');
+  $('.start-bar').hidden = !parts.length;
+  document.body.classList.toggle('has-start-bar', parts.length > 0);
+}
+
 function startWrapped() {
-  const stats = computeWrapped(state.merged.transactions, { year: state.year, coverage: state.merged.coverage });
-  if (stats.visits) story.open(stats, { demo: false });
+  const b = basketStats(basket);
+  const purchases = state.merged?.transactions ?? [];
+  const stats = purchases.length && state.year
+    ? computeWrapped(purchases, { year: state.year, coverage: state.merged.coverage })
+    : null;
+  if (!b && !stats?.visits) return;
+  story.open({ stats, basket: b, year: state.year ?? new Date().getFullYear(), demo: false });
 }
 
 function startDemo() {
   const year = demoYear();
-  story.open(computeWrapped(year.transactions, { year: DEMO_YEAR, coverage: year.coverage }), { demo: true });
+  story.open({
+    stats: computeWrapped(year.transactions, { year: DEMO_YEAR, coverage: year.coverage }),
+    basket: basketStats(DEMO_BASKET),
+    year: DEMO_YEAR,
+    demo: true,
+  });
 }
 
 // ------------------------------------------------------------------ slides
 
 function speech(s) {
   const big = s.big ? (s.big.text ?? `${num(s.big.value)} ${s.big.unit ?? ''}`) : '';
-  return [s.kicker, s.title, big, s.sub, ...(s.lines || [])].filter(Boolean).join('. ');
+  const list = (s.list || []).map((item, i) => `${i + 1}: ${item.label}, ${item.note}`);
+  return [s.kicker, s.title, big, s.sub, ...list, ...(s.lines || [])].filter(Boolean).join('. ');
 }
 
 function bigValue(big) {
@@ -150,7 +209,7 @@ function bigValue(big) {
 
 function chart({ label, bars, unit }) {
   const max = Math.max(1, ...bars.map((b) => b.value));
-  const said = bars.map((b) => `${b.label} ${unit === 'kr' ? kr(b.value) : num(b.value)}`).join(', ');
+  const said = bars.map((b) => `${b.label} ${unit === 'kr' ? kr(b.value) : num(b.value)}${unit === 'liter' ? ' liter' : ''}`).join(', ');
   return el('div', { class: 'chart', role: 'img', 'aria-label': `${label}: ${said}` }, bars.map((b) => {
     const bar = el('span', { class: `bar${b.highlight ? ' is-top' : ''}${b.faded ? ' is-faded' : ''}` },
       el('span', { class: 'bar-track' }, el('span', { class: 'bar-fill' })),
@@ -167,6 +226,13 @@ function badges(list) {
     b.note ? el('span', { class: 'badge-note', text: b.note }) : null)));
 }
 
+function topList(list) {
+  return el('ol', { class: 'toplist' }, list.map((item) => el('li', {},
+    el('span', { class: 'top-emoji', 'aria-hidden': 'true', text: item.emoji }),
+    el('span', { class: 'top-label', text: item.label }),
+    el('span', { class: 'top-note', text: item.note }))));
+}
+
 const art = () => el('div', { class: 'slide-art', 'aria-hidden': 'true' },
   el('span', { class: 'blob blob-1' }), el('span', { class: 'blob blob-2' }), el('span', { class: 'blob blob-3' }));
 
@@ -176,6 +242,7 @@ function renderSlide(s, i, count) {
     s.title ? el('p', { class: 'slide-title', text: s.title }) : null,
     s.big ? bigValue(s.big) : null,
     s.sub ? el('p', { class: 'slide-sub', text: s.sub }) : null,
+    s.list ? topList(s.list) : null,
     s.chart ? chart(s.chart) : null,
     s.badges ? badges(s.badges) : null,
     (s.lines || []).map((line) => el('p', { class: 'slide-line', text: line })),
@@ -194,23 +261,23 @@ const canShareFiles = () => {
   }
 };
 
-function renderSummary(s, i, count, stats, ctx) {
-  const facts = cardFacts(stats);
+function renderSummary(s, i, count, data) {
+  const facts = cardFacts(data);
   const status = el('p', { class: 'summary-status', 'aria-live': 'polite' });
   const say = (text) => { status.textContent = text; };
-  const fileName = `bolaget-wrapped-${stats.year}.png`;
+  const fileName = `bolaget-wrapped-${facts.year}.png`;
   const img = el('img', {
     class: 'card-preview',
     width: 1080,
     height: 1920,
-    alt: `Delningsbild: Bolaget Wrapped ${stats.year}, ${facts.persona}. ${facts.rows.map(([k, v]) => `${k}: ${v}`).join(', ')}.`,
+    alt: `Delningsbild: Bolaget Wrapped ${facts.year}, ${facts.persona}. ${facts.rows.map(([k, v]) => `${k}: ${v}`).join(', ')}.`,
   });
   story.card.then((blob) => { img.src = story.cardUrl || (story.cardUrl = URL.createObjectURL(blob)); });
 
   const share = async () => {
     const file = new File([await story.card], fileName, { type: 'image/png' });
     try {
-      await navigator.share({ files: [file], title: 'Bolaget Wrapped', text: `Mitt Bolaget Wrapped ${stats.year}` });
+      await navigator.share({ files: [file], title: 'Bolaget Wrapped', text: `Mitt Bolaget Wrapped ${facts.year}` });
     } catch (err) {
       if (err.name !== 'AbortError') say('Delningen gick inte. Spara bilden istället.');
     }
@@ -231,18 +298,26 @@ function renderSummary(s, i, count, stats, ctx) {
       say('Kopieringen gick inte. Spara bilden istället.');
     }
   };
-
+  const shareable = canShareFiles();
   const body = el('div', { class: 'slide-body summary' },
-    el('h2', { class: 'slide-kicker', text: ctx.demo ? 'Så kan det se ut' : 'Det var ditt år på Bolaget' }),
+    el('h2', { class: 'slide-kicker', text: data.demo ? 'Så kan det se ut' : 'Det var ditt år på Bolaget' }),
     img,
     el('div', { class: 'summary-actions' },
-      canShareFiles() ? el('button', { type: 'button', class: 'btn btn-primary', onclick: share, text: 'Dela' }) : null,
-      el('button', { type: 'button', class: `btn ${canShareFiles() ? 'btn-secondary' : 'btn-primary'}`, onclick: save, text: 'Spara bild' }),
+      shareable ? el('button', { type: 'button', class: 'btn btn-primary', onclick: share, text: 'Dela' }) : null,
+      el('button', { type: 'button', class: `btn ${shareable ? 'btn-secondary' : 'btn-primary'}`, onclick: save, text: 'Spara bild' }),
       'ClipboardItem' in window && navigator.clipboard?.write
         ? el('button', { type: 'button', class: 'btn btn-secondary', onclick: copy, text: 'Kopiera bild' }) : null,
       el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => story.go(0), text: 'Se igen' }),
-      ctx.demo
-        ? el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => { story.close(); $('.file-input').click(); }, text: 'Testa med din egen fil' })
+      data.demo
+        ? el('button', {
+          type: 'button',
+          class: 'btn btn-secondary',
+          onclick: () => {
+            story.close();
+            $('.basket-section').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+          },
+          text: 'Fyll din egen korg',
+        })
         : null),
     status,
     el('p', { class: 'slide-foot', text: 'Drick lagom. Alkoholhjälpen svarar på 020-84 44 48, gratis och anonymt.' }));
@@ -286,18 +361,19 @@ const story = {
   card: null,
   cardUrl: null,
 
-  open(stats, ctx) {
+  // data: { stats, basket, year, demo }
+  open(data) {
     this.clearCard();
     const host = /^https?:$/.test(location.protocol) && !/^(localhost|127\.|\[::1\])/.test(location.host) ? location.host : '';
-    this.card = cardBlob(cardFacts(stats), { host, demo: ctx.demo });
-    this.slides = buildSlides(stats, ctx);
+    this.card = cardBlob(cardFacts(data), { host, demo: data.demo });
+    this.slides = buildSlides(data);
     const count = this.slides.length;
-    this.nodes = this.slides.map((s, i) => (s.final ? renderSummary(s, i, count, stats, ctx) : renderSlide(s, i, count)));
+    this.nodes = this.slides.map((s, i) => (s.final ? renderSummary(s, i, count, data) : renderSlide(s, i, count)));
     this.slidesEl.replaceChildren(...this.nodes);
     this.segments = this.slides.map(() => el('span', { class: 'seg' }, el('i')));
     this.progress.replaceChildren(...this.segments);
-    $('.story-year').textContent = String(stats.year);
-    $('.demo-chip').hidden = !ctx.demo;
+    $('.story-year').textContent = String(data.stats?.year ?? data.year);
+    $('.demo-chip').hidden = !data.demo;
     this.setPaused(false);
     document.documentElement.classList.add('is-locked');
     if (!this.dialog.open) this.dialog.showModal();
@@ -418,9 +494,16 @@ function wireLanding() {
   });
   document.addEventListener('click', (e) => {
     const action = e.target.closest('[data-action]')?.dataset.action;
-    if (action === 'choose') input.click();
-    else if (action === 'demo') startDemo();
+    if (action === 'basket') {
+      $('.basket-section').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      $('.basket .step:last-of-type')?.focus({ preventScroll: true });
+    } else if (action === 'demo') startDemo();
     else if (action === 'paste') addPaste();
+    else if (action === 'start') startWrapped();
+  });
+  $('.favorite-input').addEventListener('input', (e) => {
+    basket.favorite = e.target.value;
+    updateStartBar();
   });
   $('.paste-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addPaste();
@@ -440,6 +523,8 @@ function wireLanding() {
   });
 }
 
+renderBasket();
 renderBanks();
 wireLanding();
+updateStartBar();
 if (location.hash === '#exempel') startDemo();

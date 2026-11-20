@@ -73,9 +73,9 @@ test('every slide reads cleanly for the sample year and the demo', () => {
     computeWrapped(demo.transactions, { year: DEMO_YEAR, coverage: demo.coverage }),
   ];
   for (const s of years) {
-    const slides = buildSlides(s, { demo: false });
+    const slides = buildSlides({ stats: s, year: s.year });
     assert.equal(slides.at(-1).id, 'summary');
-    const text = JSON.stringify([slides, cardFacts(s)]);
+    const text = JSON.stringify([slides, cardFacts({ stats: s, year: s.year })]);
     assert.doesNotMatch(text, /NaN|undefined|null kr|Infinity/);
   }
 });

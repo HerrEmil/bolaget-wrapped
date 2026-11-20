@@ -194,7 +194,7 @@ const PERSONAS = [
 ];
 
 export function persona(stats) {
-  let best = { key: 'lagom', score: 1 };
+  let best = { key: 'lagom', score: 0 };
   for (const p of PERSONAS) {
     const score = p.score(stats);
     if (score >= 1 && score > best.score) best = { key: p.key, score };

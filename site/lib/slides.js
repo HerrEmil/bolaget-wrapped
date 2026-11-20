@@ -1,56 +1,128 @@
 // Stats → the slides of the story, in Swedish. Pure: each slide is plain data
 // that app.js renders. A slide builder returns null when the year doesn't
-// have what that slide needs. Persona titles carry soft hyphens (\u00ad) so
-// long compounds break where Swedish breaks them.
+// have what that slide needs. `stats` comes from a bank export and `basket`
+// from what the visitor says they bought; either one can be missing.
+// Persona titles carry soft hyphens (­) so long compounds break where
+// Swedish breaks them.
 
 import {
   WEEKDAYS, WEEKDAYS_SHORT, MONTHS, MONTHS_SHORT, dayNumber, weekdayIndex,
   seasonWindows, midsommarafton, formatDate,
 } from './dates.js';
 import { kr, krExact, num, pct, capitalise, ordinal, plural } from './format.js';
+import { unitsText } from './basket.js';
 
 export const PERSONAS = {
+  // From the bank export: when and how you shop.
   fredag: {
-    title: 'Fredags\u00adritualisten',
+    theme: 'pink',
+    title: 'Fredags­ritualisten',
     text: 'För dig är fredag inte en veckodag. Det är en tradition, och traditioner ska man vårda.',
   },
   lonehelg: {
-    title: 'Lönehelgs\u00adfiraren',
+    theme: 'mint',
+    title: 'Lönehelgs­firaren',
     text: 'Den 25:e är din högtidsdag. Lönen landar och du vet precis vart den ska.',
   },
   sasong: {
-    title: 'Högtids\u00adfiraren',
+    theme: 'aperol',
+    title: 'Högtids­firaren',
     text: 'Du handlar inte för att det är fredag. Du handlar för att det är påsk. Och midsommar. Och kräftskiva. Och jul.',
   },
   storhandlare: {
-    title: 'Stor\u00adhandlaren',
+    theme: 'gin',
+    title: 'Stor­handlaren',
     text: 'Du går sällan, men när du går, då går du. Korgen full, och sedan dröjer det.',
   },
   stamgast: {
+    theme: 'glogg',
     title: 'Stamgästen',
     text: 'Personalen nickar igenkännande när du kliver in. Du hittar rätt hylla med slutna ögon.',
   },
   planerare: {
+    theme: 'tonic',
     title: 'Planeraren',
     text: 'Du handlar i början av veckan, när kön är kort och hyllorna fulla. Det är du som har kylt vinet i tid.',
   },
   lordag: {
-    title: 'Lördags\u00adräddaren',
+    theme: 'lime',
+    title: 'Lördags­räddaren',
     text: 'Lördag, när alla andra redan har handlat. Du gillar att leva lite på kanten.',
   },
   enflaska: {
-    title: 'Enflaske\u00adköparen',
+    theme: 'champagne',
+    title: 'Enflaske­köparen',
     text: 'En flaska i taget, aldrig mer än du behöver. Du handlar på Bolaget som andra köper bröd.',
   },
   sallan: {
+    theme: 'midnatt',
     title: 'Den sällsynta gästen',
     text: 'Du syns inte ofta på Bolaget. Men när du väl kommer är det något speciellt.',
   },
+  // From the basket: what you buy.
+  alkfri: {
+    theme: 'tonic',
+    title: 'Alkoholfria ambassadören',
+    text: 'Du går till Bolaget och kommer hem med alkoholfritt. Det kräver karaktär, och den har du.',
+  },
+  boxbaron: {
+    theme: 'blabar',
+    title: 'Box­baronen',
+    text: 'Varför bära hem flaskor när man kan bära hem en kartong? Du har förstått något som vi andra bara anar.',
+  },
+  bubbel: {
+    theme: 'champagne',
+    title: 'Bubbel­entusiasten',
+    text: 'Hos dig behövs ingen anledning för att korka upp. En tisdag räcker gott.',
+  },
+  roseromantiker: {
+    theme: 'rose',
+    title: 'Rosé­romantikern',
+    text: 'Du lever i en evig sommar, åtminstone i glaset.',
+  },
+  vittvin: {
+    theme: 'lime',
+    title: 'Vittvins­vännen',
+    text: 'Friskt, kylt och gärna i solen. Du vet hur ett glas ska kännas.',
+  },
+  rodvin: {
+    theme: 'glogg',
+    title: 'Rödvins­klassikern',
+    text: 'Ett glas rött till maten, och kanske ett till efteråt. Du håller traditionen vid liv.',
+  },
+  humle: {
+    theme: 'mint',
+    title: 'Humle­nörden',
+    text: 'Du vet skillnaden på en NEIPA och en West Coast IPA, och du berättar gärna om den.',
+  },
+  olentusiast: {
+    theme: 'lager',
+    title: 'Öl­entusiasten',
+    text: 'Ölen är din trogna följeslagare. Kall, enkel och alltid pålitlig.',
+  },
+  bartender: {
+    theme: 'gin',
+    title: 'Hemma­bartendern',
+    text: 'Gin, rom och whisky i skåpet. Hos dig blir det drinkar, inte bara glas.',
+  },
+  glogg: {
+    theme: 'midnatt',
+    title: 'Glögg­mästaren',
+    text: 'Jul är ingen högtid för dig. Det är en säsong, och den är lång.',
+  },
+  allatare: {
+    theme: 'pink',
+    title: 'Allätaren',
+    text: 'Lite av allt och aldrig tråkigt. Din korg är en hel smakresa.',
+  },
   lagom: {
+    theme: 'aperol',
     title: 'Lagomisten',
     text: 'Inte för ofta, inte för sällan. Inte för dyrt, inte för billigt. Helt enkelt lagom. Väldigt svenskt av dig.',
   },
 };
+
+const plainTitle = (key) => PERSONAS[key].title.replace(/­/g, '');
 
 // Systembolaget's own figures, checked 2026-11-20:
 // - 128 million store visits and an average purchase of 304 kr in 2025
@@ -89,6 +161,34 @@ const MONTH_LINES = [
   'December. Glögg, julbord och nyår. Klassiker.',
 ];
 
+const TOP_LINES = {
+  rott: 'Rött vin i topp. Klassiskt, och lite fredagsmys.',
+  vitt: 'Vitt vin i topp. Friskt och somrigt, året runt.',
+  rose: 'Rosé i topp. Du lever i en evig sommar.',
+  bubbel: 'Bubbel i topp. Hos dig behövs ingen anledning.',
+  box: 'Boxen i topp. Praktiskt, prisvärt och alltid till hands.',
+  ol: 'Ölen i topp. Kall, enkel och pålitlig.',
+  ipa: 'Hantverksöl i topp. Du vet vad en humlesort heter.',
+  cider: 'Cider i topp. Sött, fruktigt och lite nostalgiskt.',
+  whisky: 'Whisky i topp. Rökigt, eller hur?',
+  gin: 'Gin i topp. Tonicen tackar.',
+  vodka: 'Vodka och snaps i topp. Någon planerar en kräftskiva.',
+  rom: 'Rom i topp. Yo-ho-ho.',
+  likor: 'Likör i topp. Efterrätt i flytande form.',
+  glogg: 'Glögg i topp. Det är jul hela året hos dig.',
+  alkfri: 'Alkoholfritt i topp. Bolaget är till för alla, och du bevisar det.',
+};
+
+const WINE_LINES = {
+  rott: 'Rött vinner. Klassiskt, och lite fredagsmys.',
+  vitt: 'Vitt vinner. Friskt, kylt och gärna i solen.',
+  rose: 'Rosé vinner. Du lever i en evig sommar.',
+  bubbel: 'Bubbel vinner. Varje dag är en fest hos dig.',
+  box: 'Boxen vinner. Praktiskt, prisvärt och alltid till hands.',
+};
+const WINE_SHORT = { rott: 'rött', vitt: 'vitt', rose: 'rosé', bubbel: 'bubbel', box: 'box' };
+const WINE_BIG = { rott: 'Rött', vitt: 'Vitt', rose: 'Rosé', bubbel: 'Bubbel', box: 'Boxvin' };
+
 const SEASON_LINES = {
   pask: 'Påskveckan. Påskmust räcker uppenbarligen inte till alla.',
   valborg: 'Valborgsveckan. Våren firar inte sig själv.',
@@ -97,17 +197,112 @@ const SEASON_LINES = {
   nyar: 'Mellandagarna. Nyårsafton förbereder sig inte själv.',
 };
 
-function intro(s, ctx) {
+function intro(s, b, ctx) {
+  let line = 'Vi har packat upp korgen du fyllde i. Ingen annan har sett den.';
+  if (s) line = 'Vi har gått igenom dina kvitton. Eller, din webbläsare har. Ingen annan har sett något.';
+  if (ctx.demo) line = 'Det här är ett påhittat exempel. Fyll din egen korg för att se ditt riktiga år.';
   return {
     id: 'intro',
     theme: 'porter',
     kicker: 'Dags att packa upp',
-    title: `Ditt ${s.year} på Bolaget`,
-    lines: [ctx.demo
-      ? 'Det här är ett påhittat exempel. Ladda upp ditt eget kontoutdrag för att se ditt riktiga år.'
-      : 'Vi har gått igenom dina kvitton. Eller, din webbläsare har. Ingen annan har sett något.'],
-    footnote: s.period.fullYear ? null : `Baserat på köp ${formatDate(s.period.from)} – ${formatDate(s.period.to)}.`,
+    title: `Ditt ${ctx.year} på Bolaget`,
+    lines: [line],
+    footnote: s && !s.period.fullYear ? `Kontoutdraget gäller köp ${formatDate(s.period.from)} – ${formatDate(s.period.to)}.` : null,
     duration: 6000,
+  };
+}
+
+function haul(b) {
+  const perWeek = b.units / 52;
+  let line = 'Mindre än en i veckan. Du tar det i lagom takt.';
+  if (perWeek >= 7) line = 'Mer än en om dagen. Vi hoppas att du bjuder ofta.';
+  else if (perWeek >= 3) line = 'Flera i veckan. Du har uppenbarligen många vänner.';
+  else if (perWeek >= 1) line = 'Ett par i veckan. Helt rimligt, tycker vi.';
+  return {
+    id: 'haul',
+    theme: 'lager',
+    kicker: 'I år bar du hem',
+    big: { value: b.units, unit: b.count('box') ? 'flaskor, burkar och boxar' : 'flaskor och burkar' },
+    lines: [line],
+    aside: 'Allt enligt dig själv, förstås.',
+  };
+}
+
+function topList(b) {
+  return {
+    id: 'top',
+    theme: 'gin',
+    kicker: 'Din topplista',
+    list: b.top.slice(0, 5).map((r) => ({ emoji: r.emoji, label: r.label, note: unitsText(r) })),
+    lines: [TOP_LINES[b.top[0].key]],
+    duration: 9000,
+  };
+}
+
+function litres(b) {
+  if (b.litres < 1) return null;
+  const parts = [];
+  if (b.wineLitres >= 1) parts.push(`Vin: ${num(b.wineLitres)} liter.`);
+  if (b.beerLitres >= 1) parts.push(`Öl och cider: ${num(b.beerLitres)} liter.`);
+  return {
+    id: 'litres',
+    theme: 'tonic',
+    kicker: 'Omräknat i liter',
+    big: { value: Math.round(b.litres), unit: 'liter' },
+    lines: [`Lika mycket som ${num(b.litres)} mjölkpaket. Om du inte bjöd någon, förstås.`],
+    aside: parts.join(' ') || null,
+  };
+}
+
+function wine(b) {
+  if (b.wineLitres < 3 || b.wine.length < 2) return null;
+  const top = [...b.wine].sort((x, y) => y.litres - x.litres)[0];
+  const bars = Object.keys(WINE_SHORT).map((key) => {
+    const w = b.wine.find((x) => x.key === key);
+    return { label: WINE_SHORT[key], value: w ? Math.round(w.litres * 10) / 10 : 0, highlight: w === top };
+  });
+  let box = 'Inte en enda box. Du har principer.';
+  if (b.boxShare >= 0.5) box = `${capitalise(pct(b.boxShare))} av vinet kom ur en box. Varför bära flaskor?`;
+  else if (b.boxShare >= 0.2) box = `${capitalise(pct(b.boxShare))} av vinet kom ur en box. En sund blandning.`;
+  else if (b.boxShare > 0) box = 'Mest flaskor, men en box här och där.';
+  return {
+    id: 'wine',
+    theme: 'rose',
+    kicker: 'Ditt vin',
+    big: { text: WINE_BIG[top.key] },
+    sub: `${pct(top.share)} av vinet, räknat i liter`,
+    chart: { label: 'Vin i liter', bars, unit: 'liter' },
+    lines: [WINE_LINES[top.key]],
+    aside: box,
+  };
+}
+
+function favorite(b) {
+  return {
+    id: 'favorite',
+    theme: 'champagne',
+    kicker: 'Årets dryck',
+    big: { text: b.favorite },
+    lines: ['Enligt dig själv, och vi har ingen anledning att tvivla.'],
+    duration: 6000,
+  };
+}
+
+// The basket priced at rough typical prices, against the bank's real total.
+function reconcile(s, b) {
+  const share = b.estimateKr / s.totalKr;
+  let line = 'Du har glömt en hel del, eller så handlar du dyrt. Vi frågar inte.';
+  if (share > 1.2) line = 'Korgen är dyrare än kontoutdraget. Antingen betalade någon annan, eller så minns du generöst.';
+  else if (share >= 0.8) line = 'Det stämmer förvånansvärt bra. Du har koll på läget.';
+  else if (share >= 0.5) line = 'Resten? Vi frågar inte.';
+  return {
+    id: 'reconcile',
+    theme: 'lime',
+    kicker: 'Korgen mot kontot',
+    big: { value: Math.round(share * 100), unit: '%' },
+    sub: `av dina ${kr(s.totalKr)} på Bolaget förklaras av korgen`,
+    lines: [line],
+    footnote: 'Uppskattat med ungefärliga typpriser, till exempel 129 kr för en flaska rött och 19 kr för en burk öl.',
   };
 }
 
@@ -325,46 +520,86 @@ function hour(s) {
   };
 }
 
-function personaSlide(s) {
-  const p = PERSONAS[s.persona];
+function personaSlide(s, b) {
+  let key = 'lagom';
+  if (s) key = s.persona;
+  if (b?.units) key = b.persona;
+  const p = PERSONAS[key];
+  const traits = [];
+  if (b?.units) traits.push(`Topp 1: ${b.top[0].label.toLowerCase()}`, `${num(b.litres)} liter`);
+  if (s && b?.units && s.persona !== 'lagom') traits.push(`Bolagsvana: ${plainTitle(s.persona)}`);
+  if (s) traits.push(`Bolagsdag: ${WEEKDAYS[s.topWeekday]}`);
+  if (s && !b?.units) traits.push(`Snittköp: ${kr(s.avgKr)}`, `Bästa månad: ${MONTHS[s.topMonth]}`);
   return {
     id: 'persona',
-    theme: `persona-${s.persona}`,
+    theme: p.theme,
     kicker: 'Din Bolagsprofil',
     big: { text: p.title },
     lines: [p.text],
-    traits: [
-      `Bolagsdag: ${WEEKDAYS[s.topWeekday]}`,
-      `Snittköp: ${kr(s.avgKr)}`,
-      `Bästa månad: ${MONTHS[s.topMonth]}`,
-    ],
+    traits: traits.slice(0, 4),
     duration: 9000,
   };
 }
 
-function summary(s, ctx) {
-  return { id: 'summary', theme: 'summary', kicker: `Bolaget Wrapped ${s.year}`, demo: ctx.demo, final: true };
+function summary(ctx) {
+  return { id: 'summary', theme: 'summary', kicker: `Bolaget Wrapped ${ctx.year}`, demo: ctx.demo, final: true };
 }
 
-export function buildSlides(stats, ctx = {}) {
-  return [intro, visits, total, weekday, month, biggest, pause, payday, seasons, store, hour, personaSlide, summary]
-    .map((build) => build(stats, ctx))
+// stats: from a bank export (or null); basket: from basketStats (or null).
+export function buildSlides({ stats = null, basket = null, year, demo = false }) {
+  const s = stats?.visits ? stats : null;
+  const b = basket?.units || basket?.favorite ? basket : null;
+  const ctx = { year: s?.year ?? year, demo };
+  const has = b?.units > 0;
+  return [
+    intro(s, b, ctx),
+    has && haul(b),
+    has && topList(b),
+    has && litres(b),
+    has && wine(b),
+    s && visits(s),
+    s && total(s),
+    s && has && reconcile(s, b),
+    s && weekday(s),
+    s && month(s),
+    s && biggest(s),
+    s && pause(s),
+    s && payday(s),
+    s && seasons(s),
+    s && !has && store(s),
+    s && hour(s),
+    b?.favorite && favorite(b),
+    personaSlide(s, b),
+    summary(ctx),
+  ]
     .filter(Boolean)
     .map((slide) => ({ duration: 8000, ...slide }));
 }
 
-// The share card's facts, also reused by the summary slide.
-export function cardFacts(s) {
-  return {
-    year: s.year,
-    persona: PERSONAS[s.persona].title.replace(/\u00ad/g, ''),
-    rows: [
-      ['Besök', num(s.visits)],
-      ['Totalt', kr(s.totalKr)],
-      ['Bolagsdag', capitalise(WEEKDAYS[s.topWeekday])],
-      ['Bästa månad', capitalise(MONTHS[s.topMonth])],
-      ['Största runda', kr(s.biggest.kr)],
-      ['Längsta paus', s.pause ? plural(s.pause.days, 'dag', 'dagar') : '–'],
-    ],
-  };
+const shorten = (text, max = 22) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
+
+// The share card: the persona plus the six most telling facts available.
+export function cardFacts({ stats = null, basket = null, year }) {
+  const s = stats?.visits ? stats : null;
+  const b = basket?.units ? basket : null;
+  let persona = 'lagom';
+  if (s) persona = s.persona;
+  if (b) persona = b.persona;
+  const topWine = b && b.wineLitres >= 3 && b.wine.length >= 2 ? [...b.wine].sort((x, y) => y.litres - x.litres)[0] : null;
+  const rows = [
+    b && ['Topp 1', b.top[0].label],
+    b && ['Flaskor & burkar', num(b.units)],
+    s && ['Besök', num(s.visits)],
+    s && ['Totalt', kr(s.totalKr)],
+    basket?.favorite && ['Årets dryck', shorten(basket.favorite)],
+    s && ['Bolagsdag', capitalise(WEEKDAYS[s.topWeekday])],
+    b && b.litres >= 1 && ['Liter', num(b.litres)],
+    s && ['Bästa månad', capitalise(MONTHS[s.topMonth])],
+    s && ['Största runda', kr(s.biggest.kr)],
+    s && s.pause && ['Längsta paus', plural(s.pause.days, 'dag', 'dagar')],
+    topWine && ['Mest vin', WINE_BIG[topWine.key]],
+    b && b.wineLitres >= 3 && b.boxShare > 0 && ['Ur box', pct(b.boxShare)],
+    b && ['Sorter', num(b.rows.length)],
+  ].filter(Boolean);
+  return { year: s?.year ?? year, persona: plainTitle(persona), rows: rows.slice(0, 6) };
 }

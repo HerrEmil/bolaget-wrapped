@@ -223,42 +223,181 @@ summary {
   }
 }
 
-.import,
-.banks,
-.faq {
-  padding: 2.5rem 0;
-  border-top: 1px solid rgb(255 244 230 / 15%);
-}
-
-.steps {
-  display: grid;
-  gap: 1rem;
-  margin: 0 0 1.75rem;
-  padding: 0;
-  list-style: none;
-  counter-reset: step;
-}
-
-.steps li {
-  position: relative;
-  max-width: 40rem;
-  padding-left: 3.25rem;
-  counter-increment: step;
-}
-
-.steps li::before {
-  position: absolute;
-  top: -0.1rem;
-  left: 0;
-  display: grid;
+.step-number {
+  display: inline-grid;
   place-items: center;
   width: 2.3rem;
   height: 2.3rem;
+  margin-right: 0.35rem;
   border-radius: 50%;
   background: var(--amber);
   color: var(--porter);
+  font-size: 1.25rem;
+  vertical-align: 0.2em;
+}
+
+.optional {
+  font-size: 0.6em;
+  font-weight: 700;
+}
+
+.section-intro {
+  max-width: 40rem;
+  margin: 0 0 1.5rem;
+}
+
+.basket-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.basket-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 2px solid transparent;
+  border-radius: 1.25rem;
+  background: var(--porter-2);
+  transition: border-color 0.15s ease;
+}
+
+.basket-item.is-picked {
+  border-color: var(--amber);
+}
+
+.basket-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.basket-name {
+  display: grid;
+  flex: 1 1 8rem;
+  line-height: 1.25;
+}
+
+.basket-name small {
+  font-size: 0.85rem;
+}
+
+.stepper {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 2px solid var(--cream);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.step:focus-visible,
+.basket-per:focus-visible {
+  outline: 3px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.basket-count {
+  min-width: 2.2ch;
+  font-size: 1.25rem;
   font-weight: 900;
-  content: counter(step);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.basket-item:not(.is-picked) .basket-per {
+  display: none;
+}
+
+.basket-per {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 2px solid rgb(255 244 230 / 40%);
+  border-radius: 999px;
+  background: var(--porter);
+  color: var(--cream);
+  font: inherit;
+  font-weight: 700;
+}
+
+.favorite-label {
+  display: block;
+  margin: 1.75rem 0 0.5rem;
+  font-weight: 800;
+}
+
+.favorite-input {
+  width: 100%;
+  max-width: 30rem;
+  min-height: 3rem;
+  padding: 0.6rem 1.1rem;
+  border: 2px solid rgb(255 244 230 / 40%);
+  border-radius: 999px;
+  background: var(--porter-2);
+  color: var(--cream);
+  font: inherit;
+}
+
+.favorite-input::placeholder {
+  color: rgb(255 244 230 / 70%);
+}
+
+.favorite-input:focus-visible {
+  border-color: var(--amber);
+  outline: none;
+}
+
+.start-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgb(255 244 230 / 15%);
+  background: rgb(31 18 12 / 95%);
+}
+
+.start-bar[hidden] {
+  display: none;
+}
+
+.start-summary {
+  margin: 0;
+  font-weight: 800;
+}
+
+.has-start-bar {
+  padding-bottom: 7rem;
+}
+
+.basket-section,
+.import,
+.faq {
+  padding: 2.5rem 0;
+  border-top: 1px solid rgb(255 244 230 / 15%);
 }
 
 .drop {
@@ -425,9 +564,13 @@ summary {
   outline-offset: 2px;
 }
 
+.banks {
+  margin-top: 1.25rem;
+}
+
 .banks-intro {
   max-width: 46rem;
-  margin: 0 0 1.25rem;
+  margin: 0.75rem 0 1rem;
 }
 
 .bank-list,
@@ -481,8 +624,7 @@ summary {
   --accent: #3a2418;
 }
 
-.theme-lager,
-.theme-persona-lagom {
+.theme-lager {
   --bg: #ffbd2e;
   --fg: #2b1600;
   --accent: #ffd56b;
@@ -494,43 +636,37 @@ summary {
   --accent: #ff9db6;
 }
 
-.theme-gin,
-.theme-persona-storhandlare {
+.theme-gin {
   --bg: #2c2a8f;
   --fg: #f3f1ff;
   --accent: #4744b8;
 }
 
-.theme-glogg,
-.theme-persona-stamgast {
+.theme-glogg {
   --bg: #7a1426;
   --fg: #fff0e8;
   --accent: #9a2238;
 }
 
-.theme-champagne,
-.theme-persona-enflaska {
+.theme-champagne {
   --bg: #f4e3a1;
   --fg: #2a2008;
   --accent: #fbefc4;
 }
 
-.theme-tonic,
-.theme-persona-planerare {
+.theme-tonic {
   --bg: #bfeffc;
   --fg: #062b36;
   --accent: #dff8ff;
 }
 
-.theme-aperol,
-.theme-persona-sasong {
+.theme-aperol {
   --bg: #ff6a2b;
   --fg: #2b0b00;
   --accent: #ff8a55;
 }
 
-.theme-midnatt,
-.theme-persona-sallan {
+.theme-midnatt {
   --bg: #10213f;
   --fg: #f2f6ff;
   --accent: #1f3a66;
@@ -542,20 +678,19 @@ summary {
   --accent: #6540a8;
 }
 
-.theme-lime,
-.theme-persona-lordag {
+.theme-lime {
   --bg: #d7f75b;
   --fg: #1d2600;
   --accent: #e6fb8f;
 }
 
-.theme-persona-fredag {
+.theme-pink {
   --bg: #f15bb5;
   --fg: #2b0020;
   --accent: #f784c9;
 }
 
-.theme-persona-lonehelg {
+.theme-mint {
   --bg: #3ddc97;
   --fg: #032116;
   --accent: #6ee6b1;
@@ -1039,6 +1174,54 @@ summary {
   border: 2px solid var(--fg);
   border-radius: 999px;
   font-size: 3.8cqw;
+  font-weight: 700;
+}
+
+.toplist {
+  display: grid;
+  gap: 1.8cqh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+
+.toplist li {
+  display: grid;
+  grid-template-areas:
+    "rank emoji label"
+    "rank emoji note";
+  grid-template-columns: 7cqw 10cqw 1fr;
+  column-gap: 2.5cqw;
+  align-items: center;
+  counter-increment: rank;
+}
+
+.toplist li::before {
+  grid-area: rank;
+  font-size: 8cqw;
+  font-weight: 900;
+  line-height: 1;
+  content: counter(rank);
+}
+
+.top-emoji {
+  grid-area: emoji;
+  font-size: 8cqw;
+  line-height: 1;
+}
+
+.top-label {
+  grid-area: label;
+  font-size: 6.2cqw;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.top-note {
+  grid-area: note;
+  font-size: 4cqw;
   font-weight: 700;
 }
 

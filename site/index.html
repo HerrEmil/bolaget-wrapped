@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; form-action 'none'; base-uri 'none'">
   <title>Bolaget Wrapped – ditt år på Systembolaget</title>
-  <meta name="description" content="Ett inofficiellt Systembolaget Wrapped. Släpp ditt kontoutdrag här och få ditt år på Bolaget sammanfattat. Allt räknas ut i din webbläsare och inget skickas någonstans.">
+  <meta name="description" content="Ett inofficiellt Systembolaget Wrapped. Fyll korgen med det du köpte i år, lägg till kontoutdraget om du vill, och få ditt år på Bolaget uppackat. Allt räknas ut i din webbläsare.">
   <meta name="theme-color" content="#1f120c">
   <meta property="og:title" content="Bolaget Wrapped">
-  <meta property="og:description" content="Ditt år på Systembolaget, sammanfattat. Inofficiellt och på skoj.">
+  <meta property="og:description" content="Ditt år på Systembolaget, uppackat. Inofficiellt och på skoj.">
   <meta property="og:type" content="website">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
@@ -20,27 +20,31 @@
       <div class="hero-text">
         <p class="kicker">Inofficiellt · på skoj</p>
         <h1 class="hero-title">Bolaget <span class="hero-accent">Wrapped</span></h1>
-        <p class="lede">Spotify har sitt. Nu har Bolaget också ett. Typ. Släpp ditt kontoutdrag här, så sammanfattar vi ditt år på Systembolaget: dagarna, högtiderna och den där torsdagen före midsommar.</p>
+        <p class="lede">Spotify har sitt. Nu har Bolaget också ett. Typ. Berätta vad som hamnade i korgen i år, släpp in kontoutdraget om du vill, och få ditt år på Systembolaget uppackat.</p>
         <div class="cta">
-          <button type="button" class="btn btn-primary" data-action="choose">Välj kontoutdrag</button>
+          <button type="button" class="btn btn-primary" data-action="basket">Fyll din korg</button>
           <button type="button" class="btn btn-secondary" data-action="demo">Visa ett exempel</button>
         </div>
         <p class="privacy">Allt räknas ut här i din webbläsare. Inget laddas upp och inget sparas.</p>
       </div>
       <div class="hero-art" aria-hidden="true">
-        <div class="mini mini-lager"><span class="mini-big">57</span><span class="mini-label">besök</span></div>
-        <div class="mini mini-gin"><span class="mini-big">Fredag</span><span class="mini-label">Bolagsdag</span></div>
-        <div class="mini mini-rose"><span class="mini-big">Fredags&shy;ritualisten</span><span class="mini-label">Bolagsprofil</span></div>
+        <div class="mini mini-lager"><span class="mini-big">312</span><span class="mini-label">flaskor och burkar</span></div>
+        <div class="mini mini-gin"><span class="mini-big">Rött vin</span><span class="mini-label">Topp 1</span></div>
+        <div class="mini mini-rose"><span class="mini-big">Box&shy;baronen</span><span class="mini-label">Bolagsprofil</span></div>
       </div>
     </section>
 
+    <section class="basket-section" aria-labelledby="basket-title">
+      <h2 id="basket-title"><span class="step-number">1</span> Fyll korgen</h2>
+      <p class="section-intro">Ungefär vad bar du hem från Bolaget i år? Gissa fritt, det är ingen tävling.</p>
+      <div class="basket"></div>
+      <label class="favorite-label" for="favorite-input">Årets dryck <span class="optional">(valfritt)</span></label>
+      <input class="favorite-input" id="favorite-input" type="text" maxlength="40" autocomplete="off" placeholder="till exempel den där Amaronen">
+    </section>
+
     <section class="import" aria-labelledby="import-title">
-      <h2 id="import-title">Så här gör du</h2>
-      <ol class="steps">
-        <li><strong>Exportera.</strong> Logga in på internetbanken och spara årets transaktioner för kontot eller kortet du handlar med, som CSV- eller Excel-fil.</li>
-        <li><strong>Släpp filen här.</strong> Flera filer går bra om du handlar med flera kort.</li>
-        <li><strong>Luta dig tillbaka.</strong> Resten sköter vi.</li>
-      </ol>
+      <h2 id="import-title"><span class="step-number">2</span> Lägg till kontoutdraget <span class="optional">(valfritt)</span></h2>
+      <p class="section-intro">Med kontoutdraget vet vi också när och hur mycket: dina Bolagsdagar, högtiderna, lönehelgen och om korgen stämmer med kontot.</p>
       <input class="file-input" id="file-input" type="file" multiple accept=".csv,.txt,.tsv,.xlsx,.xls,.htm,.html,text/csv,text/plain">
       <label class="drop" for="file-input">
         <span class="drop-title">Släpp kontoutdraget här</span>
@@ -53,12 +57,11 @@
         <button type="button" class="btn btn-small" data-action="paste">Läs in</button>
       </details>
       <div class="result" aria-live="polite"></div>
-    </section>
-
-    <section class="banks" aria-labelledby="banks-title">
-      <h2 id="banks-title">Så exporterar du från banken</h2>
-      <p class="banks-intro">Exportera från internetbanken på en dator, appen kan oftast inte. Välj hela året och kontot eller kortet du brukar handla med.</p>
-      <div class="bank-list"></div>
+      <details class="banks">
+        <summary>Så exporterar du från banken</summary>
+        <p class="banks-intro">Exportera från internetbanken på en dator, appen kan oftast inte. Välj hela året och kontot eller kortet du brukar handla med.</p>
+        <div class="bank-list"></div>
+      </details>
     </section>
 
     <section class="faq" aria-labelledby="faq-title">
@@ -68,16 +71,16 @@
         <p>Nej. Bolaget Wrapped är ett inofficiellt skämt och har inget med Systembolaget eller Spotify att göra.</p>
       </details>
       <details>
-        <summary>Vad händer med mitt kontoutdrag?</summary>
-        <p>Ingenting. Filen läses av din webbläsare, på din dator, och försvinner när du stänger fliken. Sidan har ingen server att skicka den till och är dessutom låst så att den inte kan skicka data någonstans.</p>
+        <summary>Varför måste jag fylla i korgen själv?</summary>
+        <p>För att ingen annan vet vad du köpte. Systembolaget kopplar inte butiksköp till personer, och kontoutdraget visar bara när och hur mycket.</p>
+      </details>
+      <details>
+        <summary>Vad händer med det jag fyller i?</summary>
+        <p>Ingenting. Korgen och kontoutdraget läses av din webbläsare, på din dator, och försvinner när du stänger fliken. Sidan har ingen server att skicka något till och är dessutom låst så att den inte kan prata med någon annan sajt.</p>
       </details>
       <details>
         <summary>Varför stämmer inte siffrorna exakt?</summary>
-        <p>Vi ser bara kortköp där det står Systembolaget i texten. Kontanter, Swish och kompisens kort syns inte. Vissa banker visar dessutom bokföringsdagen och inte köpdagen, så ett fredagsköp kan hamna på en måndag.</p>
-      </details>
-      <details>
-        <summary>Ni hittade inga köp alls?</summary>
-        <p>Kolla att du har exporterat rätt konto och rätt period. Annars: grattis till ett nyktert år.</p>
+        <p>Korgen är din egen uppskattning. Från kontoutdraget ser vi bara kortköp där det står Systembolaget i texten, och vissa banker visar bokföringsdagen och inte köpdagen, så ett fredagsköp kan hamna på en måndag.</p>
       </details>
     </section>
   </main>
@@ -86,6 +89,11 @@
     <p>Bolaget Wrapped är en inofficiell parodi och har inget med Systembolaget att göra. Ett sidoprojekt från <a href="https://herremil.com">herremil.com</a>.</p>
     <p>Drick lagom. Vill du prata med någon om alkohol? <a href="https://alkoholhjalpen.se">Alkoholhjälpen</a> svarar på 020-84 44 48, gratis och anonymt.</p>
   </footer>
+
+  <div class="start-bar" hidden>
+    <p class="start-summary"></p>
+    <button type="button" class="btn btn-primary" data-action="start">Visa min Wrapped</button>
+  </div>
 
   <dialog class="story" aria-label="Bolaget Wrapped">
     <div class="story-frame">
