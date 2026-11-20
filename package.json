@@ -1,0 +1,10 @@
+{
+  "name": "bolaget-wrapped",
+  "private": true,
+  "type": "module",
+  "description": "An unofficial, Spotify-Wrapped-style recap of a year at Systembolaget, computed in the browser from a bank export.",
+  "scripts": {
+    "test": "node --test",
+    "dev": "python3 -m http.server 8080 --directory site"
+  }
+}

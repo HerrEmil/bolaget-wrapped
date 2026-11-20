@@ -1,0 +1,24 @@
+# Agent instructions
+
+Bolaget Wrapped: an unofficial, Spotify-Wrapped-style recap of a year at Systembolaget, in Swedish. Static site in `site/`, no build step, vanilla ES modules.
+
+## Privacy is the product
+
+- Everything runs in the visitor's browser. `site/index.html` sets a CSP with `connect-src 'none'`, so the page cannot send data anywhere. Keep it that way: no analytics, no fonts or scripts from other hosts.
+- Never commit a real bank export. Fixtures in `test/fixtures/` are synthetic copies of each bank's format.
+
+## Layout
+
+- `site/lib/parse.js`: bank export → Systembolaget purchases (header mapping first, value shapes as fallback). Format facts per bank are in the test names in `test/parse.test.js`.
+- `site/lib/stats.js`: purchases → year stats. Pure and clock-free.
+- `site/lib/slides.js`: stats → slide copy. Systembolaget figures quoted there carry their source in a comment; don't add a figure without one.
+- `site/lib/demo.js`: the seeded example year (`DEMO_YEAR`, `DEMO_SEED`); `test/stats.test.js` pins its shape.
+- `site/lib/xlsx.js`: minimal .xlsx reader on `DecompressionStream`, lazy-loaded.
+- `site/app.js`: DOM, story player, share card.
+
+## Checks
+
+- `npm test` (node --test, zero dependencies).
+- `npm run dev` serves `site/` on port 8080.
+- The perf gate is `HerrEmil/perf-config` v1 with this repo's `lighthouserc.json` (`staticDistDir: ./site`). `unminified-javascript` is off because the site ships unbuilt modules; performance must still score >= 0.92.
+- Never run AWS locally; deploys go through GitHub Actions.
