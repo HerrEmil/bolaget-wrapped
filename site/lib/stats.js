@@ -18,12 +18,20 @@ export function yearsIn(transactions) {
   return [...days].map(([year, set]) => ({ year, visits: set.size })).sort((a, b) => b.year - a.year);
 }
 
-// The newest year with a real amount of data, so an export that starts on
-// 28 December doesn't produce a wrap of three days.
-export function defaultYear(transactions) {
+// The newest year the export really covers (half a year or more), or failing
+// that the newest with a handful of visits. An export that starts on
+// 28 December shouldn't produce a wrap of three days, and a quiet but complete
+// last year beats a busy year long ago.
+export function defaultYear(transactions, coverage = null) {
   const years = yearsIn(transactions);
   if (!years.length) return null;
-  const solid = years.find((y) => y.visits >= 5);
+  const covered = (year) => {
+    if (coverage?.from == null || coverage?.to == null) return 0;
+    const from = Math.max(coverage.from, dayNumber(year, 1, 1));
+    const to = Math.min(coverage.to, dayNumber(year, 12, 31));
+    return Math.max(0, to - from + 1);
+  };
+  const solid = years.find((y) => covered(y.year) >= 183 || y.visits >= 5);
   if (solid) return solid.year;
   return [...years].sort((a, b) => b.visits - a.visits || b.year - a.year)[0].year;
 }
@@ -83,11 +91,14 @@ export function computeWrapped(transactions, { year, coverage = {} }) {
   const sortedKr = days.map((d) => d.kr).sort((a, b) => a - b);
   const medianKr = visits % 2 ? sortedKr[(visits - 1) / 2] : round2((sortedKr[visits / 2 - 1] + sortedKr[visits / 2]) / 2);
 
-  // Longest stretch without a visit, between two visits.
+  // Longest stretch without a visit, including the start of the year before
+  // the first visit and the end after the last one (as far as the export
+  // reaches): two visits in June and July still mean five dry months first.
   let pause = null;
-  for (let i = 1; i < visits; i++) {
-    const length = days[i].date - days[i - 1].date - 1;
-    if (!pause || length > pause.days) pause = { days: length, from: days[i - 1].date + 1, to: days[i].date - 1 };
+  const edges = [from - 1, ...days.map((d) => d.date), to + 1];
+  for (let i = 1; i < edges.length; i++) {
+    const length = edges[i] - edges[i - 1] - 1;
+    if (length > 0 && (!pause || length > pause.days)) pause = { days: length, from: edges[i - 1] + 1, to: edges[i] - 1 };
   }
 
   // Most visits inside any seven-day window.
@@ -128,7 +139,8 @@ export function computeWrapped(transactions, { year, coverage = {} }) {
   // "Systembolaget" alone, or the company name, says nothing about a store.
   const named = storeList.filter(([name]) => name.includes(' ') && !/^Systembolaget (AB|Se)$/i.test(name));
   const unnamed = purchases.length - named.reduce((n, [, count]) => n + count, 0);
-  const topStore = named.length ? { name: named[0][0], visits: named[0][1], storeCount: named.length, unnamed } : null;
+  // A regular store needs a few visits to be a regular.
+  const topStore = named.length && named[0][1] >= 3 ? { name: named[0][0], visits: named[0][1], storeCount: named.length, unnamed } : null;
 
   const timed = purchases.filter((t) => t.time);
   let topHour = null;

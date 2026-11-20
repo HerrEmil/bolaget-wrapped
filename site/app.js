@@ -51,9 +51,9 @@ function renderBasket() {
       el('span', { class: 'basket-emoji', 'aria-hidden': 'true', text: c.emoji }),
       el('span', { class: 'basket-name' }, el('strong', { text: c.label }), el('small', { text: c.size })),
       el('span', { class: 'stepper' },
-        el('button', { type: 'button', class: 'step', 'aria-label': `En ${c.one} mindre: ${c.label}`, onclick: () => change(-1), text: '−' }),
+        el('button', { type: 'button', class: 'step', 'aria-label': `Färre: ${c.label}`, onclick: () => change(-1), text: '−' }),
         count,
-        el('button', { type: 'button', class: 'step', 'aria-label': `En ${c.one} till: ${c.label}`, onclick: () => change(1), text: '+' })),
+        el('button', { type: 'button', class: 'step', 'aria-label': `Fler: ${c.label}`, onclick: () => change(1), text: '+' })),
       el('select', { class: 'basket-per', name: `per-${c.key}`, 'aria-label': `Hur ofta: ${c.label}`, onchange: (e) => { pick.per = e.target.value; updateStartBar(); } },
         Object.entries(PER_LABEL).map(([value, label]) => el('option', { value, selected: value === pick.per, text: label }))));
     return row;
@@ -86,7 +86,7 @@ function renderResult() {
   const merged = mergeResults(imported.filter((f) => f.result).map((f) => f.result));
   const years = yearsIn(merged.transactions);
   state.merged = merged;
-  if (!years.some((y) => y.year === state.year)) state.year = defaultYear(merged.transactions);
+  if (!years.some((y) => y.year === state.year)) state.year = defaultYear(merged.transactions, merged.coverage);
 
   const files = el('ul', { class: 'file-list' }, imported.map((f) => {
     let status = 'is-empty';

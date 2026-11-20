@@ -35,7 +35,10 @@ test('computeWrapped counts visits as days and nets refunds', () => {
 
 test('computeWrapped finds the pause, the rush and the streak', () => {
   const s = computeWrapped(YEAR, { year: 2026, coverage: COVERAGE });
-  assert.deepEqual([s.pause.days, toISO(s.pause.from), toISO(s.pause.to)], [103, '2026-03-07', '2026-06-17']);
+  // The stretch after the last visit, up to the end of the export, counts too.
+  assert.deepEqual([s.pause.days, toISO(s.pause.from), toISO(s.pause.to)], [104, '2026-08-08', '2026-11-19']);
+  const fullYear = computeWrapped(YEAR, { year: 2026, coverage: { from: dayNumber(2026, 1, 1), to: dayNumber(2026, 8, 10) } });
+  assert.deepEqual([fullYear.pause.days, toISO(fullYear.pause.from)], [103, '2026-03-07']);
   assert.deepEqual([s.rush.visits, toISO(s.rush.from)], [2, '2026-08-01']);
   assert.equal(s.weekStreak, 2);
 });
@@ -59,6 +62,18 @@ test('an export that starts mid-year says nothing about what came before', () =>
   const june = computeWrapped(since(6, 1), { year: 2026, coverage: { from: dayNumber(2026, 6, 1), to: dayNumber(2026, 11, 19) } });
   assert.equal(june.seasons.find((x) => x.key === 'valborg').state, 'unknown');
   assert.equal(june.period.daysCovered, 172);
+});
+
+test('defaultYear prefers a fully covered quiet year over a busy old one', () => {
+  const rows = [
+    ...[3, 4, 5, 6, 7, 8, 9, 10].map((m) => ({ ...tx(m, 6, 99), date: dayNumber(2022, m, 6) })),
+    { ...tx(3, 6, 99), date: dayNumber(2025, 3, 6) },
+    { ...tx(9, 6, 99), date: dayNumber(2025, 9, 6) },
+    { ...tx(1, 5, 99), date: dayNumber(2026, 1, 5) },
+  ];
+  const coverage = { from: dayNumber(2022, 4, 7), to: dayNumber(2026, 1, 8) };
+  assert.equal(defaultYear(rows, coverage), 2025);
+  assert.equal(defaultYear(rows), 2022);
 });
 
 test('defaultYear skips a thin new year', () => {

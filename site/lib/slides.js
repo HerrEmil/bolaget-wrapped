@@ -435,7 +435,7 @@ function pause(s) {
     theme: 'tonic',
     kicker: 'Din längsta paus',
     big: { value: p.days, unit: p.days === 1 ? 'dag' : 'dagar' },
-    sub: `${formatDate(p.from)} – ${formatDate(p.to)}`,
+    sub: `${formatDate(p.from)} – ${formatDate(p.to)}${p.to === s.period.to && !s.period.fullYear ? ', och räknar' : ''}`,
     lines: [line],
     aside: extras.join(' ') || null,
   };
