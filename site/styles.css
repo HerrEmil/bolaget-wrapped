@@ -610,8 +610,8 @@ summary {
     padding-top: 5rem;
   }
 
-  .steps {
-    grid-template-columns: repeat(3, 1fr);
+  .basket-list {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
