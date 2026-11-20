@@ -1,6 +1,6 @@
 # Bolaget Wrapped
 
-An unofficial, Spotify-Wrapped-style recap of your year at Systembolaget, in Swedish.
+An unofficial, Spotify-Wrapped-style recap of your year at Systembolaget, in Swedish. Live at https://bolaget-wrapped.se.
 
 1. **Fill the basket.** Tick roughly what you brought home this year (red wine, bag-in-box, beer, gin, glögg, alcohol-free…) and how often. Systembolaget doesn't link store purchases to people, so this part has to come from you.
 2. **Add a bank export (optional).** CSV, Excel or pasted rows from most Swedish banks add when and how much: visits, favourite weekday, holidays, payday habits, and how much of the money your basket explains.
