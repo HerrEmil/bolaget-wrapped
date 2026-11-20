@@ -22,5 +22,5 @@ Bolaget Wrapped: an unofficial, Spotify-Wrapped-style recap of a year at Systemb
 - `npm test` (node --test, zero dependencies).
 - `npm run dev` serves `site/` on port 8080.
 - The perf gate is `HerrEmil/perf-config` v1 with this repo's `lighthouserc.json` (`staticDistDir: ./site`). `unminified-javascript` is off because the site ships unbuilt modules; performance must still score >= 0.92.
-- Deploy: push to main runs `.github/workflows/deploy.yml`, which syncs `site/` only to the project's own bucket and invalidates CloudFront. Live at https://bolaget-wrapped.se; bolaget-wrapped.herremil.com and www.bolaget-wrapped.se 301 there (operations' add-custom-domain). The domain is registered at Hostup, DNS is in Route 53. If you change `deploy.yml`, it must still sync `site/` only.
+- Deploy: push to main runs `.github/workflows/deploy.yml`, which syncs `site/` only to the project's own bucket and invalidates CloudFront. Live at https://bolaget-wrapped.se. If you change `deploy.yml`, it must still sync `site/` only.
 - Never run AWS locally; deploys go through GitHub Actions.
