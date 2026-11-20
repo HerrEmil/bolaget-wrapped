@@ -1,0 +1,21 @@
+name: perf
+
+on:
+  pull_request:
+    branches: [main]
+    # Skip docs-only PRs to keep the gate cheap (~3 min full job).
+    # Main-line tracking is handled by perf-config's weekly Lighthouse cron.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".github/ISSUE_TEMPLATE/**"
+
+jobs:
+  perf:
+    uses: HerrEmil/perf-config/.github/workflows/perf.yml@v1
+    with:
+      # Must match what deploy.yml syncs to S3. lighthouserc.json at the repo
+      # root points Lighthouse at the same folder.
+      site_dir: site
+      tier: static
+      package_manager: none
